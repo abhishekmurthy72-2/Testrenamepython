@@ -1,25 +1,29 @@
 from CheckmarxPythonSDK.CxOne import (
     get_sast_results_by_scan_id,
     get_a_list_of_projects,
-    get_last_scan_info
+    get_last_scan_info,
+    get_all_scanners_results_by_scan_id
 )
 
 import csv
 from datetime import datetime
 
 class passwordResult:
-  def __init__(self, projectName, tags, queryName, severity, fileName, language, status, foundAt):
+  def __init__(self, projectName, tags, type, queryName, severity, fileName, line, language, status, state, foundAt):
     self.projectName = projectName
     self.tags = tags
+    self.type = type
     self.queryName = queryName
     self.severity = severity
     self.fileName = fileName
+    self.line = line
     self.language = language
     self.status = status
+    self.state = state
     self.foundAt = foundAt
   
   def __iter__(self):
-    return iter([self.projectName, self.tags, self.queryName, self.severity, self.fileName, self.language, self.status, self.foundAt])
+    return iter([self.projectName, self.tags, self.type, self.queryName, self.severity, self.fileName, self.line, self.language, self.status, self.state, self.foundAt])
 
 if __name__ == '__main__':
 
@@ -31,27 +35,52 @@ if __name__ == '__main__':
         scanInfo= lastScanInfo.get(project.id)
 
         if scanInfo:
-            scanData = get_sast_results_by_scan_id(scan_id=scanInfo.id, limit=5000)
+            scanData = get_all_scanners_results_by_scan_id(scan_id=scanInfo.id, limit=10000)
             
             #get results from scan that relate to passwords
             allResults = scanData.get("results")
 
             for result in allResults:
+                resultData = result.data
                 #add secrets, keys, truffle hog to list of things to look for
-                if "password" in result.queryName.lower() or "secret" in result.queryName.lower() or "key" in result.queryName.lower():
-                    targetResult = passwordResult(
-                        projectName = project.name,
-                        tags = project.tags,
-                        queryName = result.queryName,
-                        severity = result.severity,
-                        fileName = result.nodes[0].fileName,
-                        language = result.languageName,
-                        status = result.status,
-                        foundAt = result.foundAt
-                        #add file name
-                    )
 
-                    allTargetResults.append(targetResult)
+                #process sast results
+                if result.type == "sast":
+                    if "password" in resultData.get("queryName").lower() or "secret" in resultData.get("queryName").lower() or "key" in resultData.get("queryName").lower():
+                        targetResult = passwordResult(
+                            projectName = project.name,
+                            tags = project.tags,
+                            type = result.type,
+                            queryName = resultData.get("queryName"),
+                            severity = result.severity,
+                            fileName = resultData.get("nodes")[0].get("fileName"),
+                            line = resultData.get("nodes")[0].get("line"),
+                            language = resultData.get("languageName"),
+                            status = result.status,
+                            state = result.state,
+                            foundAt = result.foundAt
+                        )
+                        
+                        allTargetResults.append(targetResult)
+
+                #process kics results        
+                if result.type == "kics":
+                   if "password" in resultData.get("queryName").lower() or "secret" in resultData.get("queryName").lower() or "key" in resultData.get("queryName").lower():
+                        targetResult = passwordResult(
+                            projectName = project.name,
+                            tags = project.tags,
+                            type = result.type,
+                            queryName = resultData.get("queryName"),
+                            severity = result.severity,
+                            fileName = resultData.get("fileName"),
+                            line = resultData.get("line"),
+                            language = resultData.get("platform"),
+                            status = result.status,
+                            state = result.state,
+                            foundAt = result.foundAt
+                        )
+                        
+                        allTargetResults.append(targetResult)
             
         else:
             print("This project has no scans: " + project.name)
@@ -59,7 +88,7 @@ if __name__ == '__main__':
         #Create csv file with all results
         currentDate = datetime.now().strftime("%d-%m-%Y")
         fileName = "PasswordFindings_" + currentDate + ".csv"
-        csvHeaders = ["projectName", "projectTags", "queryName", "severity", "fileName", "language", "status", "foundAt"]
+        csvHeaders = ["projectName", "projectTags", "type", "queryName", "severity", "fileName", "line", "language", "status", "state", "foundAt"]
         with open(fileName, "w") as stream:
             writer = csv.DictWriter(stream, fieldnames=csvHeaders)
             writer.writeheader()
