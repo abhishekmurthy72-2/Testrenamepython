@@ -42,7 +42,6 @@ if __name__ == '__main__':
     for project in allProjects.projects:
         lastScanInfo = get_last_scan_info(project_ids=[project.id], limit=1)
         scanInfo= lastScanInfo.get(project.id)
-        print(scanInfo.createdAt)
         scanDate = parser.parse(scanInfo.createdAt)
 
         if scanInfo and scanDate > utc.localize(cuffOffDate):
