@@ -42,75 +42,76 @@ if __name__ == '__main__':
     for project in allProjects.projects:
         lastScanInfo = get_last_scan_info(project_ids=[project.id], limit=1)
         scanInfo= lastScanInfo.get(project.id)
-        scanDate = parser.parse(scanInfo.createdAt)
 
-        if scanInfo and scanDate > utc.localize(cuffOffDate):
-            scanData = get_all_scanners_results_by_scan_id(scan_id=scanInfo.id, limit=10000)
-            
-            #get results from scan that relate to passwords
-            allResults = scanData.get("results")
+        if scanInfo:
+            scanDate = parser.parse(scanInfo.createdAt)
 
-            for result in allResults:
-                resultData = result.data
+            if scanDate > utc.localize(cuffOffDate):
+                scanData = get_all_scanners_results_by_scan_id(scan_id=scanInfo.id, limit=10000)    
+                #get results from scan that relate to passwords
+                allResults = scanData.get("results")
 
-                #process sast results
-                if result.type == "sast":
-                    targetResult = vulnData(
-                        projectName = project.name,
-                        tags = project.tags,
-                        type = result.type,
-                        queryName = resultData.get("queryName"),
-                        severity = result.severity,
-                        fileName = resultData.get("nodes")[0].get("fileName"),
-                        line = resultData.get("nodes")[0].get("line"),
-                        language = resultData.get("languageName"),
-                        packageName = "",
-                        CVE_Id = "",
-                        status = result.status,
-                        state = result.state,
-                        foundAt = result.foundAt
-                    )
+                for result in allResults:
+                    resultData = result.data
+
+                    #process sast results
+                    if result.type == "sast":
+                        targetResult = vulnData(
+                            projectName = project.name,
+                            tags = project.tags,
+                            type = result.type,
+                            queryName = resultData.get("queryName"),
+                            severity = result.severity,
+                            fileName = resultData.get("nodes")[0].get("fileName"),
+                            line = resultData.get("nodes")[0].get("line"),
+                            language = resultData.get("languageName"),
+                            packageName = "",
+                            CVE_Id = "",
+                            status = result.status,
+                            state = result.state,
+                            foundAt = result.foundAt
+                        )
+                        
+                        allTargetResults.append(targetResult)
                     
-                    allTargetResults.append(targetResult)
-                
-                if result.type == "sca":
-                    targetResult = vulnData(
-                        projectName = project.name,
-                        tags = project.tags,
-                        type = result.type,
-                        queryName = resultData.get("packageIdentifier"),
-                        severity = result.severity,
-                        fileName = "",
-                        line = "",
-                        language = "",
-                        packageName = resultData.get("packageIdentifier"),
-                        CVE_Id = result.id,
-                        status = result.status,
-                        state = result.state,
-                        foundAt = result.foundAt
-                    )
-                    
-                    allTargetResults.append(targetResult)
+                    if result.type == "sca":
+                        targetResult = vulnData(
+                            projectName = project.name,
+                            tags = project.tags,
+                            type = result.type,
+                            queryName = resultData.get("packageIdentifier"),
+                            severity = result.severity,
+                            fileName = "",
+                            line = "",
+                            language = "",
+                            packageName = resultData.get("packageIdentifier"),
+                            CVE_Id = result.id,
+                            status = result.status,
+                            state = result.state,
+                            foundAt = result.foundAt
+                        )
+                        
+                        allTargetResults.append(targetResult)
 
-                #process kics results        
-                if result.type == "kics":
-                    targetResult = vulnData(
-                        projectName = project.name,
-                        tags = project.tags,
-                        type = result.type,
-                        queryName = resultData.get("queryName"),
-                        severity = result.severity,
-                        fileName = resultData.get("fileName"),
-                        line = resultData.get("line"),
-                        language = resultData.get("platform"),
-                        packageName = "",
-                        CVE_Id = "",
-                        status = result.status,
-                        state = result.state,
-                        foundAt = result.foundAt
-                    )
-                    
-                    allTargetResults.append(targetResult)
+                    #process kics results        
+                    if result.type == "kics":
+                        targetResult = vulnData(
+                            projectName = project.name,
+                            tags = project.tags,
+                            type = result.type,
+                            queryName = resultData.get("queryName"),
+                            severity = result.severity,
+                            fileName = resultData.get("fileName"),
+                            line = resultData.get("line"),
+                            language = resultData.get("platform"),
+                            packageName = "",
+                            CVE_Id = "",
+                            status = result.status,
+                            state = result.state,
+                            foundAt = result.foundAt
+                        )
+                        
+                        allTargetResults.append(targetResult)
             
         else:
             print("This project has no scans: " + project.name)
