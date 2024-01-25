@@ -26,7 +26,7 @@ if __name__ == '__main__':
             if line > 0:
                 #create the application input
                 rule = RuleInput(rule_type="project.tag.key-value.exists",value=tagRule)
-                newTag = {'Humana App ID': appId}
+                newTag = {'App ID': appId}
                 newApp = ApplicationInput(
                     name= row[0],
                     rules= [rule],
