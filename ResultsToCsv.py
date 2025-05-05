@@ -112,7 +112,7 @@ if __name__ == '__main__':
                         )
                         
                         allTargetResults.append(targetResult)
-            
+            //test
         else:
             print("This project has no scans: " + project.name)
 
